@@ -162,10 +162,10 @@ module MotionModel
         quoted_attrs[name] = begin
           case value
           when nil;         'NULL'
-          when Numeric;     value.to_s
           when FalseClass;  0
           when TrueClass;   1
-          else;             %Q["#{value.gsub(/"/, '""')}"]
+          when String;      %Q["#{value.gsub(/"/, '""')}"]
+          else;             value.to_s
           end
         end
       end
