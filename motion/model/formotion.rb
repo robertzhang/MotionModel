@@ -34,6 +34,8 @@ module MotionModel
     end
 
     def default_hash_for(column, value)
+      value = value.to_f if is_date_time?(column)
+
       {:key         => column.to_sym,
        :title       => column.to_s.humanize,
        :type        => FORMOTION_MAP[column_type(column)],
@@ -66,6 +68,8 @@ module MotionModel
     # If you want a title for your Formotion form, set the <tt>form_title</tt>
     # argument to a string that will become that title.
     def to_formotion(form_title = nil, expose_auto_date_fields = false, first_section_title = nil)
+      return new_to_formotion(form_title) if form_title.is_a? Hash
+
       @expose_auto_date_fields = expose_auto_date_fields
 
       sections = {
@@ -99,6 +103,74 @@ module MotionModel
         form[:sections] << section
       end
       form
+    end
+
+    # <tt>new_to_formotion</tt> maps a MotionModel into a hash in a user-definable
+    # manner, according to options.
+    #
+    # form_title:    String for form title
+    # sections:      Array of sections
+    #
+    # Within sections, use these keys:
+    #
+    # title:         String for section title
+    # field:         Name of field in your model (Symbol)
+    #
+    # Hash looks something like this:
+    #
+    # {sections: [
+    #   {title:  'First Section',           # First section
+    #    fields: [:name, :gender]           # contains name and gender
+    #   },
+    #   {title:  'Second Section',
+    #    fields: [:address, :city, :state],  # Second section, address
+    #    {title: 'Submit', type: :submit}    # city, state add submit button
+    #   }
+    # ]}
+    def new_to_formotion(options = {form_title: nil, sections: []})
+      form = {}
+
+      @expose_auto_date_fields = options[:auto_date_fields]
+
+      fields = returnable_columns
+      form[:title] = options[:form_title] unless options[:form_title].nil?
+      fill_from_options(form, options) if options[:sections]
+      form
+    end
+
+    def fill_from_options(form, options)
+      form[:sections] ||= []
+
+      options[:sections].each do |section|
+        form[:sections] << fill_section(section)
+      end
+      form
+    end
+
+    def fill_section(section)
+      new_section = {}
+
+      section.each_pair do |key, value|
+        case key
+        when :title
+          new_section[:title] = value unless value.nil?
+        when :fields
+          new_section[:rows] ||= []
+          value.each do |field_or_hash|
+            new_section[:rows].push(fill_row(field_or_hash))
+          end
+        end
+      end
+      new_section
+    end
+
+    def fill_row(field_or_hash)
+      case field_or_hash
+        when Hash
+          return field_or_hash unless field_or_hash.keys.detect{|key| key =~ /^formotion_/}
+        else
+          combine_options field_or_hash, default_hash_for(field_or_hash, self.send(field_or_hash))
+      end
     end
 
     # <tt>from_formotion</tt> takes the information rendered from a Formotion

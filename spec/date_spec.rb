@@ -52,5 +52,27 @@ describe "time conversions" do
 
   end
 
+  describe "parsing ISO8601 date formats" do
+    class Model
+      include MotionModel::Model
+      include MotionModel::ArrayModelAdapter
+      columns :test_date => :date,
+    end
 
+    it 'parses ISO8601 format variant #1 (RoR  default)' do
+      m = Model.new(test_date: '2012-04-23T18:25:43Z')
+      m.test_date.should.not.be.nil
+    end
+
+    it 'parses ISO8601 variant #2, 3DP Accuracy (RoR4), JavaScript built-in JSON object' do
+      m = Model.new(test_date: '2012-04-23T18:25:43.511Z')
+      m.test_date.should.not.be.nil
+    end
+
+    it 'parses ISO8601 variant #3' do
+      m = Model.new(test_date: '2012-04-23 18:25:43 +0000')
+      m.test_date.should.not.be.nil
+      m.test_date.utc.to_s.should.eql '2012-04-23 18:25:43 UTC'
+    end
+  end
 end

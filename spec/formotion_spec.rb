@@ -140,4 +140,101 @@ describe "formotion" do
       result = @first_section_rows.has_hash_value?(:related_models).should == false
     end
   end
+
+  describe "new syntax" do
+    it "generates a formotion hash" do
+      @subject.new_to_formotion.should.not.be.nil
+    end
+
+    it "has the correct form title" do
+      @subject.new_to_formotion(form_title: 'test form')[:title].should == 'test form'
+    end
+
+    it "has two sections" do
+      s = @subject.new_to_formotion(
+        sections: [
+          {title: 'one'},
+          {title: 'two'}
+          ]
+          )[:sections].length.should == 2
+    end
+
+    it "does not include title in the default section" do
+      @subject.new_to_formotion(
+        sections: [
+          {fields: [:name]},
+          {title: 'two'}
+          ]
+          )[:sections].first[:title].should == nil
+    end
+
+    it "does include address in the second section" do
+      @subject.new_to_formotion(
+        sections: [
+          {fields: [:name]},
+          {title: 'two'}
+          ]
+          )[:sections][1][:title].should.not == nil
+    end
+
+    it "has two rows in the first section" do
+      @subject.new_to_formotion(
+        sections: [
+          {fields: [:name, :date]},
+          {title: 'two'}
+          ]
+          )[:sections][0][:rows].length.should == 2
+    end
+
+    it "has two rows in the first section" do
+      @subject.new_to_formotion(
+        sections: [
+          {fields: [:name, :date]},
+          {title: 'two'}
+          ]
+          )[:sections][0][:rows].length.should == 2
+    end
+
+    it "value of location row in :address section is 'my house'" do
+      @subject.new_to_formotion(
+        sections: [
+          {title: 'name', fields: [:name, :date]},
+          {title: 'address', fields: [:location]}
+          ]
+          )[:sections][1][:rows].first[:value].should == 'my house'
+    end
+    it "value of name row is 'get together'" do
+        @subject.new_to_formotion(
+        sections: [
+          {title: 'name', fields: [:name, :date]},
+          {title: 'address', fields: [:location]}
+          ]
+          )[:sections][1][:rows].first[:value].should == 'my house'
+    end
+    it "allows you to place buttons in your form" do
+        result = @subject.new_to_formotion(
+        sections: [
+          {title: 'name', fields: [:name, :date, {title: 'Submit', type: :submit}]},
+          {title: 'address', fields: [:location]}
+          ]
+          )
+
+        result[:sections][0][:rows][2].should.is_a? Hash
+        result[:sections][0][:rows][2].should.has_key?(:type)
+        result[:sections][0][:rows][2][:type].should == :submit
+    end
+
+    it "creates date as a float in the formotion hash" do
+        result = @subject.new_to_formotion(
+        sections: [
+          {title: 'name', fields: [:name, :date, {title: 'Submit', type: :submit}]},
+          {title: 'address', fields: [:location]}
+          ]
+          )
+        date_row = result[:sections][0][:rows][1]
+        date_row.should.has_key?(:type)
+        date_row[:type].should == :date
+        date_row[:value].class.should == Float
+    end
+  end
 end
